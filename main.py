@@ -50,6 +50,7 @@ async def balance(ctx):
 async def earn(ctx, amount: int):
     user_id = str(ctx.author.id)
     user_balances[user_id] = user_balances.get(user_id, 0) + amount
+    check_and_grant_achievement(ctx.author, user_id)
     embed = create_embed('Earned Coins', f'{ctx.author.mention}, you earned {amount} coins! Your new balance is {user_balances[user_id]} coins.')
     await ctx.send(embed=embed)
 
@@ -68,6 +69,7 @@ async def buy(ctx, item: str, quantity: int):
         return
     
     user_balances[user_id] -= cost
+    check_and_grant_achievement(ctx.author, user_id)
     if user_id in user_inventories:
         if item in user_inventories[user_id]:
             user_inventories[user_id][item] += quantity
@@ -139,8 +141,10 @@ async def daily(ctx):
     last_claimed[user_id] = now
     reward = 100
     user_balances[user_id] = user_balances.get(user_id, 0) + reward
+    check_and_grant_achievement(ctx.author, user_id)
     embed = create_embed('Daily Reward', f'{ctx.author.mention}, you claimed your daily reward of {reward} coins.')
     await ctx.send(embed=embed)
+
 
 @bot.hybrid_command(name='leaderboard', description='View the top users by balance.')
 async def leaderboard(ctx):
@@ -190,6 +194,7 @@ async def job(ctx, job_name: str = None):
     
     user_balances[user_id] = user_balances.get(user_id, 0) + payout
     last_work_time[user_id] = datetime.now()
+    check_and_grant_achievement(ctx.author, user_id)
     embed = create_embed('Job', f'{ctx.author.mention}, you worked as a {job_name} and earned {payout} coins!')
     await ctx.send(embed=embed)
 
@@ -212,6 +217,7 @@ async def collect(ctx):
         user_balances[user_id] = user_balances.get(user_id, 0) + job_payout
     
     last_work_time[user_id] = datetime.now()
+    check_and_grant_achievement(ctx.author, user_id)
     embed = create_embed('Collect Income', f'{ctx.author.mention}, you collected your income of {total_payout} coins!')
     await ctx.send(embed=embed)
     
@@ -303,7 +309,29 @@ async def blackjack(ctx):
     user_balances[user_id] = user_balances.get(user_id, 0) + amount
     embed = create_embed('Blackjack', f'{ctx.author.mention}, you played a game of blackjack and {outcome}! You earned {amount} coins.')
     await ctx.send(embed=embed)
-    
+
+@bot.hybrid_command(name='achievements', description='View your unlocked achievements.')
+async def achievements(ctx):
+    user_id = str(ctx.author.id)
+    user_achievements = achievements.get(user_id, 'No achievements yet.')
+    embed = create_embed('Achievements', f'{ctx.author.mention}, your achievements: {user_achievements}')
+    await ctx.send(embed=embed)
+
+
+# Define the role ID for "The Richest"
+THE_RICHEST_ROLE_ID = 1247177712309764167
+  # Replace with your actual role ID
+
+def check_and_grant_achievement(user, user_id):
+    if user_balances.get(user_id, 0) >= 30000 and user_id not in achievements:
+        achievements[user_id] = "The Richest"
+        role = discord.utils.get(user.guild.roles, id=THE_RICHEST_ROLE_ID)
+        asyncio.run_coroutine_threadsafe(user.add_roles(role), bot.loop)
+
+def create_embed(title, description):
+    embed = discord.Embed(title=title, description=description, color=discord.Color.purple())
+    return embed
+
     
 
 
