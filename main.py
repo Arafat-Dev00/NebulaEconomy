@@ -332,7 +332,32 @@ def create_embed(title, description):
     embed = discord.Embed(title=title, description=description, color=discord.Color.purple())
     return embed
 
-    
+@bot.command(name='add_money')
+@commands.has_permissions(administrator=True)
+async def add_money(ctx, target: discord.Member, amount: int):
+    user_id = str(target.id)
+    user_balances[user_id] = user_balances.get(user_id, 0) + amount
+    embed = create_embed('Money Added', f'{amount} coins added to {target.mention}\'s balance.')
+    await ctx.send(embed=embed)
+
+    # Optionally, you can check for negative amounts and remove money
+    # if amount < 0:
+    #     user_balances[user_id] = max(0, user_balances.get(user_id, 0) + amount)
+
+    # Check and grant achievement if applicable
+    check_and_grant_achievement(target, user_id)
+
+    # Optionally, you can log the transaction or send a confirmation message
+    # log_transaction(target, ctx.author, amount)
+
+    # Send a confirmation message
+    confirmation_message = f"{amount} coins added to {target.name}'s balance."
+    await ctx.send(confirmation_message)
+
+@add_money.error
+async def add_money_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send("You do not have permission to use this command.")
 
 
 bot.run(token)
